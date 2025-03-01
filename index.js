@@ -3,8 +3,12 @@ const c = canvas.getContext('2d')
 const turnHtml = document.getElementById('turn')
 console.log(turnHtml)
 
-canvas.width = 600
-canvas.height = 600
+if (window.innerWidth <= 650){
+	canvas.width = 600
+} else {
+	canvas.width = 400
+}
+canvas.height = canvas.width
 
 c.imageSmoothingEnabled = false
 
@@ -407,7 +411,7 @@ function drawBoard() {
 		}		
 	}
 
-	c.font = '20px Arial'
+	c.font = `${canvas.width / 30}px Arial`
 	for (var i = 0; i < 8; i++) {
 		// numbers
 		if (i % 2) {
@@ -449,8 +453,8 @@ window.addEventListener('mousedown', (event) => {
 
 	pieces.forEach(piece => {
 		if (
-			piece.position.x / 75 === Math.floor(mouse.startPos.x / 75) &&
-			piece.position.y / 75 === Math.floor(mouse.startPos.y / 75)
+			piece.position.x / squareSize === Math.floor(mouse.startPos.x / squareSize) &&
+			piece.position.y / squareSize === Math.floor(mouse.startPos.y / squareSize)
 		) {
 			mouse.selectedPiece = piece
 		}
@@ -465,8 +469,8 @@ window.addEventListener('mouseup', (event) => {
 		if (isValidMove()) {
 			pieces.forEach(piece => {
 				if (
-					piece.position.x / 75 === Math.floor(mouse.endPos.x / 75) &&
-					piece.position.y / 75 === Math.floor(mouse.endPos.y / 75)
+					piece.position.x / squareSize === Math.floor(mouse.endPos.x / squareSize) &&
+					piece.position.y / squareSize === Math.floor(mouse.endPos.y / squareSize)
 				) {
 					pieces.splice(pieces.indexOf(piece), 1)
 				}
