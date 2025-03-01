@@ -8,13 +8,16 @@ c.imageSmoothingEnabled = false
 
 const squareSize = canvas.width / 8
 const placeholderImage = new Image()
-let pieces = []
 
 const mouse = {
+	isDown: false,
 	position: {
-		x: undefined,
-		y: undefined
-	},
+		x: 0,
+		y: 0
+	}
+}
+const movePiece = {
+	currPiece: undefined,
 	startPos: {
 		x: undefined,
 		y: undefined
@@ -22,21 +25,10 @@ const mouse = {
 	endPos: {
 		x: undefined,
 		y: undefined
-	},
-	isDown: false,
-	selectedPiece: undefined
+	}
 }
 
-let board = [
-    [2, 3, 4, 5, 6, 4, 3, 2],
-    [1, 1, 1, 1, 1, 1, 1, 1],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [11, 11, 11, 11, 11, 11, 11, 11],
-    [12, 13, 14, 15, 16, 14, 13, 12],
-]
+let pieces = []
 
 
 function createImage(imageSrc) {
@@ -61,66 +53,106 @@ const images = {
 
 
 class Piece {
-    constructor({x, y, tag}) {
-        this.position = {
-            x,
-            y
-        }
+	constructor({x, y, tag}) {
+		this.position = {
+			x: x,
+			y: y
+		}
 
-        this.width = squareSize
-        this.height = squareSize
+		this.width = squareSize
+		this.height = squareSize
 
-        this.tag = tag
-        this.image = placeholderImage
-        this.loaded = false
-    }
+		this.tag = tag
+		this.image = placeholderImage
+		this.loaded = false
+	}
 
-    draw() {
-        if (this.loaded) {
-            c.drawImage(
-                this.image,
-                this.position.x,
-                this.position.y,
-                this.width,
-                this.height
-            )
-        }
-    }
-}
-
-
-function createStaticPieces() {
-	pieces = []
-
-	for (let i = 0; i < 8; i++) {
-		for (let j = 0; j < 8; j++) {
-			if (board[j][i]) {
-				switch (board[j][i]) {
-					case 1: tempTag = 'blackPawn'; break
-					case 11: tempTag = 'whitePawn'; break
-					case 2: tempTag = 'blackRook'; break
-					case 12: tempTag = 'whiteRook'; break
-					case 3: tempTag = 'blackKnight'; break
-					case 13: tempTag = 'whiteKnight'; break
-					case 4: tempTag = 'blackBishop'; break
-					case 14: tempTag = 'whiteBishop'; break
-					case 5: tempTag = 'blackQueen'; break
-					case 15: tempTag = 'whiteQueen'; break
-					case 6: tempTag = 'blackKing'; break
-					case 16: tempTag = 'whiteKing'; break
-				}
-				pieces.push(
-					new Piece({
-						x: i * squareSize,
-						y: j * squareSize,
-						tag: tempTag
-					})
-				)
-			}
+	draw() {
+		if (this.loaded === true) {
+			c.drawImage(
+				this.image,
+				this.position.x * squareSize,
+				this.position.y * squareSize,
+				squareSize,
+				squareSize
+			)
 		}
 	}
 }
-createStaticPieces()
+
+
+function initPieces() {
+	for (let i = 0; i < 8; i++) {
+		pieces.push(
+			new Piece({
+				x: i,
+				y: 1,
+				tag: 'blackPawn'
+			}),
+			new Piece({
+				x: i,
+				y: 6,
+				tag: 'whitePawn'
+			})
+		)
+	}
+	for (let i = 0; i < 2; i++) {
+		pieces.push(
+			new Piece({
+				x: i * 7,
+				y: 0,
+				tag: 'blackRook'
+			}),
+			new Piece({
+				x: i * 7,
+				y: 7,
+				tag: 'whiteRook'
+			}),
+			new Piece({
+				x: i * 5 + 1,
+				y: 0,
+				tag: 'blackKnight'
+			}),
+			new Piece({
+				x: i * 5 + 1,
+				y: 7,
+				tag: 'whiteKnight'
+			}),
+			new Piece({
+				x: i * 3 + 2,
+				y: 0,
+				tag: 'blackBishop'
+			}),
+			new Piece({
+				x: i * 3 + 2,
+				y: 7,
+				tag: 'whiteBishop'
+			})
+		)
+	}
+	pieces.push(
+		new Piece({
+			x: 3,
+			y: 0,
+			tag: 'blackQueen'
+		}),
+		new Piece({
+			x: 3,
+			y: 7,
+			tag: 'whiteQueen'
+		}),
+		new Piece({
+			x: 4,
+			y: 0,
+			tag: 'blackKing'
+		}),
+		new Piece({
+			x: 4,
+			y: 7,
+			tag: 'whiteKing'
+		})
+	)
+}
 
 
 // cycle through images and set onload functions
@@ -135,11 +167,6 @@ Object.keys(images).forEach(tag => {
 		})
 	}
 })
-
-
-function isValidMove() {
-	return true
-}
 
 
 const lightCol = '#f5cfa2'
@@ -173,85 +200,64 @@ function drawBoard() {
 }
 
 
-function displayStaticPieces() {
-	pieces.forEach(piece => {
-		piece.draw()
-	})
-}
-
-
-function roundSquare(x) {
-	return Math.ceil(x / squareSize) * squareSize - squareSize
-}
-
-
 function animate() {
-  requestAnimationFrame(animate)
+	requestAnimationFrame(animate)
 	c.fillStyle = 'white'
 	c.fillRect(0, 0, canvas.width, canvas.height)
 
-  drawBoard()
-	displayStaticPieces()
+	drawBoard()
 
-	console.log(mouse)
+	pieces.forEach(piece => {
+		if (piece.loaded === true) {
+			piece.draw()
+		}
+	})
+
+	console.log(`mousedown: ${mouse.isDown},   mousepos: ${mouse.position.x}, ${mouse.position.y}`)
+	console.log(`movePiece: ${movePiece.piece},   startPos: ${movePiece.startPos.x}, ${movePiece.startPos.y}`)
 }
+
+
+initPieces()
 animate()
 
 
 window.addEventListener('mousedown', (event) => {
-	mouse.startPos = ({x: mouse.position.x, y: mouse.position.y})
 	mouse.isDown = true
-
+	movePiece.startPos = ({ x: mouse.position.x, y: mouse.position.y })
 	pieces.forEach(piece => {
-		if (
-			piece.position.x / 75 === Math.floor(mouse.startPos.x / 75) &&
-			piece.position.y / 75 === Math.floor(mouse.startPos.y / 75)
-		) {
-			mouse.selectedPiece = piece
+		if (piece.position.x === movePiece.startPos.x & piece.position.y === movePiece.startPos.y) {
+			movePiece.currPiece = piece
 		}
 	})
 })
-
 window.addEventListener('mouseup', (event) => {
-	mouse.endPos = ({x: mouse.position.x, y: mouse.position.y})
 	mouse.isDown = false
-
-	if (isValidMove()) {
-		pieces.forEach(piece => {
+	movePiece.endPos = ({ x: mouse.position.x, y: mouse.position.y })
+	if (movePiece.currPiece !== undefined) {
+		pieces.forEach((piece, index) => {
 			if (
-				piece.position.x / 75 === Math.floor(mouse.endPos.x / 75) &&
-				piece.position.y / 75 === Math.floor(mouse.endPos.y / 75)
+				piece.position.x === movePiece.endPos.x &&
+				piece.position.y === movePiece.endPos.y &&
+				movePiece.endPos.x !== movePiece.startPos.x &&
+				movePiece.endPos.y !== movePiece.startPos.y
 			) {
-				pieces.splice(pieces.indexOf(piece), 1)
+				pieces.splice(index, 1)
 			}
 		})
-
-		mouse.selectedPiece.position = ({
-			x: roundSquare(mouse.endPos.x),
-			y: roundSquare(mouse.endPos.y)
-		})
-
-		mouse.selectedPiece = undefined
+		movePiece.currPiece.position.x = movePiece.endPos.x
+		movePiece.currPiece.position.y = movePiece.endPos.y
+		movePiece.currPiece = undefined
 	}
 })
-
 window.addEventListener('mousemove', (event) => {
-	let x = event.clientX - canvas.getBoundingClientRect().left
-	let y = event.clientY - canvas.getBoundingClientRect().top
+	let x = Math.floor((event.clientX - canvas.getBoundingClientRect().left) / squareSize)
+	let y = Math.floor((event.clientY - canvas.getBoundingClientRect().top) / squareSize)
 
-	if (
-		x > 0 &&
-		y > 0 &&
-		x < canvas.width &&
-		y < canvas.height
-	) {
-		mouse.position = ({x: x, y: y})
-
-		if (mouse.isDown && mouse.selectedPiece !== undefined) {
-			mouse.selectedPiece.position = ({
-				x: mouse.position.x - squareSize / 2,
-				y: mouse.position.y - squareSize / 2
-			})
-		}
+	if (x >= 0 && x <= 7 && y >= 0 && y <= 7) {
+		mouse.position.x = x
+	}
+	if (x >= 0 && x <= 7 && y >= 0 && y <= 7) {
+		mouse.position.y = y
 	}
 })
