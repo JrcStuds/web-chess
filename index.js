@@ -1,5 +1,7 @@
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
+const turnHtml = document.getElementById('turn')
+console.log(turnHtml)
 
 canvas.width = 600
 canvas.height = 600
@@ -189,8 +191,8 @@ function isValidMove() {
 
 	// check whos turn it is
 	if (
-		(startPiece.col === 'black' && turn % 2 === 1) ||
-		(startPiece.col === 'white' && turn % 2 === 0)
+		(startPiece.col === 'black' && turn % 2 === 0) ||
+		(startPiece.col === 'white' && turn % 2 === 1)
 	) {
 			return false
 	}
@@ -479,6 +481,11 @@ window.addEventListener('mouseup', (event) => {
 			board[Math.floor(mouse.startPos.y / squareSize)][Math.floor(mouse.startPos.x / squareSize)] = 0
 
 			turn++
+			if (turn % 2 === 0) {
+				turnHtml.innerHTML = 'White\'s Turn To Move'
+			} else {
+				turnHtml.innerHTML = 'Black\'s Turn To Move'
+			}
 	
 		} else {
 			mouse.selectedPiece.position = ({
