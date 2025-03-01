@@ -3,7 +3,7 @@ const c = canvas.getContext('2d')
 const turnHtml = document.getElementById('turn')
 console.log(turnHtml)
 
-if (window.innerWidth <= 650){
+if (window.innerWidth >= 650){
 	canvas.width = 600
 } else {
 	canvas.width = 400
