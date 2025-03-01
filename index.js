@@ -10,6 +10,8 @@ const squareSize = canvas.width / 8
 const placeholderImage = new Image()
 let pieces = []
 
+let turn = 0
+
 const mouse = {
 	position: {
 		x: undefined,
@@ -89,26 +91,51 @@ class Piece {
 }
 
 
+function pieceCode(x) {
+	y = undefined
+	if (typeof(x) === 'string') {
+		switch (x) {
+			case 'blackPawn': y = 1; break
+			case 'whitePawn': y = 11; break
+			case 'blackRook': y = 2; break
+			case 'whiteRook': y = 12; break
+			case 'blackKnight': y = 3; break
+			case 'whiteKnight': y = 13; break
+			case 'blackBishop': y = 4; break
+			case 'whiteBishop': y = 14; break
+			case 'blackQueen': y = 5; break
+			case 'whiteQueen': y = 15; break
+			case 'blackKing': y = 6; break
+			case 'whiteKing': y = 16; break
+		}
+	} else if (typeof(x) === 'number') {
+		switch (x) {
+			case 1: y = 'blackPawn'; break
+			case 11: y = 'whitePawn'; break
+			case 2: y = 'blackRook'; break
+			case 12: y = 'whiteRook'; break
+			case 3: y = 'blackKnight'; break
+			case 13: y = 'whiteKnight'; break
+			case 4: y = 'blackBishop'; break
+			case 14: y = 'whiteBishop'; break
+			case 5: y = 'blackQueen'; break
+			case 15: y = 'whiteQueen'; break
+			case 6: y = 'blackKing'; break
+			case 16: y = 'whiteKing'; break
+			case 0: y = 'xxxxxxxxx'; break
+		}
+	}
+	return y
+}
+
+
 function createStaticPieces() {
 	pieces = []
 
 	for (let i = 0; i < 8; i++) {
 		for (let j = 0; j < 8; j++) {
 			if (board[j][i]) {
-				switch (board[j][i]) {
-					case 1: tempTag = 'blackPawn'; break
-					case 11: tempTag = 'whitePawn'; break
-					case 2: tempTag = 'blackRook'; break
-					case 12: tempTag = 'whiteRook'; break
-					case 3: tempTag = 'blackKnight'; break
-					case 13: tempTag = 'whiteKnight'; break
-					case 4: tempTag = 'blackBishop'; break
-					case 14: tempTag = 'whiteBishop'; break
-					case 5: tempTag = 'blackQueen'; break
-					case 15: tempTag = 'whiteQueen'; break
-					case 6: tempTag = 'blackKing'; break
-					case 16: tempTag = 'whiteKing'; break
-				}
+				tempTag = pieceCode(board[j][i])
 				pieces.push(
 					new Piece({
 						x: i * squareSize,
@@ -138,7 +165,229 @@ Object.keys(images).forEach(tag => {
 
 
 function isValidMove() {
-	return true
+	const startCoord = {
+		x: Math.floor(mouse.startPos.x / squareSize),
+		y: Math.floor(mouse.startPos.y / squareSize)
+	}
+	const endCoord = {
+		x: Math.floor(mouse.endPos.x / squareSize),
+		y: Math.floor(mouse.endPos.y / squareSize)
+	}
+	const startPiece = {
+		col: pieceCode(board[startCoord.y][startCoord.x]).slice(0, 5),
+		piece: pieceCode(board[startCoord.y][startCoord.x]).slice(5)
+	}
+	const endPiece = {
+		col: pieceCode(board[endCoord.y][endCoord.x]).slice(0, 5),
+		piece: pieceCode(board[endCoord.y][endCoord.x]).slice(5)
+	}
+
+	// if moving to a square with same colour piece
+	if (endPiece.col !== 'xxxxx' && endPiece.col === startPiece.col) {
+		return false
+	}
+
+	// check whos turn it is
+	if (
+		(startPiece.col === 'black' && turn % 2 === 1) ||
+		(startPiece.col === 'white' && turn % 2 === 0)
+	) {
+			return false
+	}
+
+	// go through pieces
+	if (startPiece.piece === 'Pawn') {
+		if (startPiece.col === 'black') {
+			if (
+				// one square diagonal and onto white
+				(Math.abs(endCoord.x - startCoord.x) === 1 && endCoord.y - startCoord.y === 1 && endPiece.col === 'white') ||
+				// on home row, two squares down, file is same, moving to empty square
+				(startCoord.y === 1 && endCoord.y - startCoord.y === 2 && endPiece.col === 'xxxxx' && board[startCoord.y + 1][startCoord.x] === 0) ||
+				// one square down, file is same, moving to empty square
+				(endCoord.y - startCoord.y === 1 && endCoord.x === startCoord.x && endPiece.col === 'xxxxx')
+			) {
+				return true
+			} else return false
+		}
+
+		if (startPiece.col === 'white') {
+			if (
+				// one square diagonal and onto white
+				(Math.abs(endCoord.x - startCoord.x) === 1 && endCoord.y - startCoord.y === -1 && endPiece.col === 'black') ||
+				// on home row, two squares down, file is same, moving to empty square
+				(startCoord.y === 6 && endCoord.y - startCoord.y === -2 && endPiece.col === 'xxxxx' && board[startCoord.y - 1][startCoord.x] === 0) ||
+				// one square down, file is same, moving to empty square
+				(endCoord.y - startCoord.y === -1 && endCoord.x === startCoord.x && endPiece.col === 'xxxxx')
+			) {
+				return true
+			} else return false
+		}
+
+		return false
+	} else if (startPiece.piece === 'Rook') {
+		// end if any diagonal
+		if (endCoord.x !== startCoord.x && endCoord.y !== startCoord.y) {
+			return false
+		}
+		// up
+		if (endCoord.y < startCoord.y) {
+			for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+				if (board[startCoord.y - i][startCoord.x] !== 0) {
+					return false
+				}
+			}
+		}
+		// down
+		if (endCoord.y > startCoord.y) {
+			for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+				if (board[startCoord.y + i][startCoord.x] !== 0) {
+					return false
+				}
+			}
+		}
+		// left
+		if (endCoord.x < startCoord.x) {
+			for (let i = 1; i < Math.abs(endCoord.x - startCoord.x); i++) {
+				if (board[startCoord.y][startCoord.x - i] !== 0) {
+					return false
+				}
+			}
+		}
+		// right
+		if (endCoord.x > startCoord.x) {
+			for (let i = 1; i < Math.abs(endCoord.x - startCoord.x); i++) {
+				if (board[startCoord.y][startCoord.x + i] !== 0) {
+					return false
+				}
+			}
+		}
+		return true
+	} else if (startPiece.piece === 'Knight') {
+		if (
+			(Math.abs(endCoord.x - startCoord.x) === 2 && Math.abs(endCoord.y - startCoord.y) === 1) ||
+			(Math.abs(endCoord.x - startCoord.x) === 1 && Math.abs(endCoord.y - startCoord.y) === 2)
+		) {
+			return true
+		} else return false
+	} else if (startPiece.piece === 'Bishop') {
+		// diff in x has to equal diff in y
+		if (Math.abs(endCoord.x - startCoord.x) !== Math.abs(endCoord.y - startCoord.y)) {
+			return false
+		}
+		// up-right
+		if (endCoord.x > startCoord.x && endCoord.y < startCoord.y) {
+			for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+				if (board[startCoord.y - i][startCoord.x + i] !== 0) {
+					return false
+				}
+			}
+		}
+		// down-right
+		if (endCoord.x > startCoord.x && endCoord.y > startCoord.y) {
+			for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+				if (board[startCoord.y + i][startCoord.x + i] !== 0) {
+					return false
+				}
+			}
+		}
+		// down-left
+		if (endCoord.x < startCoord.x && endCoord.y > startCoord.y) {
+			for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+				if (board[startCoord.y + i][startCoord.x - i] !== 0) {
+					return false
+				}
+			}
+		}
+		// up-left
+		if (endCoord.x < startCoord.x && endCoord.y < startCoord.y) {
+			console.log('upleft')
+			for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+				if (board[startCoord.y - i][startCoord.x - i] !== 0) {
+					console.log(i, Math.abs(endCoord.y - startCoord.y))
+					console.log(board[startCoord.y - i][startCoord.x - i] !== 0)
+					return false
+				}
+			}
+		}
+		return true
+	} else if (startPiece.piece === 'Queen') {
+		if (endCoord.y === startCoord.y || endCoord.x === startCoord.x) {
+			// up
+			if (endCoord.y < startCoord.y) {
+				for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+					if (board[startCoord.y - i][startCoord.x] !== 0) {
+						return false
+					}
+				}
+			}
+			// down
+			if (endCoord.y > startCoord.y) {
+				for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+					if (board[startCoord.y + i][startCoord.x] !== 0) {
+						return false
+					}
+				}
+			}
+			// left
+			if (endCoord.x < startCoord.x) {
+				for (let i = 1; i < Math.abs(endCoord.x - startCoord.x); i++) {
+					if (board[startCoord.y][startCoord.x - i] !== 0) {
+						return false
+					}
+				}
+			}
+			// right
+			if (endCoord.x > startCoord.x) {
+				for (let i = 1; i < Math.abs(endCoord.x - startCoord.x); i++) {
+					if (board[startCoord.y][startCoord.x + i] !== 0) {
+						return false
+					}
+				}
+			}
+			return true
+		} else if (Math.abs(endCoord.y - startCoord.y) === Math.abs(endCoord.x - startCoord.x)) {
+			// up-right
+			if (endCoord.x > startCoord.x && endCoord.y < startCoord.y) {
+				for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+					if (board[startCoord.y - i][startCoord.x + i] !== 0) {
+						return false
+					}
+				}
+			}
+			// down-right
+			if (endCoord.x > startCoord.x && endCoord.y > startCoord.y) {
+				for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+					if (board[startCoord.y + i][startCoord.x + i] !== 0) {
+						return false
+					}
+				}
+			}
+			// down-left
+			if (endCoord.x < startCoord.x && endCoord.y > startCoord.y) {
+				for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+					if (board[startCoord.y + i][startCoord.x - i] !== 0) {
+						return false
+					}
+				}
+			}
+			// up-left
+			if (endCoord.x < startCoord.x && endCoord.y < startCoord.y) {
+				console.log('upleft')
+				for (let i = 1; i < Math.abs(endCoord.y - startCoord.y); i++) {
+					if (board[startCoord.y - i][startCoord.x - i] !== 0) {
+						console.log(i, Math.abs(endCoord.y - startCoord.y))
+						console.log(board[startCoord.y - i][startCoord.x - i] !== 0)
+						return false
+					}
+				}
+			}
+			return true
+		} else return false
+	} else if (startPiece.piece === 'King') {
+		if (Math.abs(endCoord.x - startCoord.x) <= 1 && Math.abs(endCoord.y - startCoord.y) <= 1) {
+			return true
+		} else return false
+	}
 }
 
 
@@ -173,13 +422,6 @@ function drawBoard() {
 }
 
 
-function displayStaticPieces() {
-	pieces.forEach(piece => {
-		piece.draw()
-	})
-}
-
-
 function roundSquare(x) {
 	return Math.ceil(x / squareSize) * squareSize - squareSize
 }
@@ -191,9 +433,10 @@ function animate() {
 	c.fillRect(0, 0, canvas.width, canvas.height)
 
   drawBoard()
-	displayStaticPieces()
-
-	console.log(mouse)
+	
+	pieces.forEach(piece => {
+		piece.draw()
+	})
 }
 animate()
 
@@ -216,21 +459,34 @@ window.addEventListener('mouseup', (event) => {
 	mouse.endPos = ({x: mouse.position.x, y: mouse.position.y})
 	mouse.isDown = false
 
-	if (isValidMove()) {
-		pieces.forEach(piece => {
-			if (
-				piece.position.x / 75 === Math.floor(mouse.endPos.x / 75) &&
-				piece.position.y / 75 === Math.floor(mouse.endPos.y / 75)
-			) {
-				pieces.splice(pieces.indexOf(piece), 1)
-			}
-		})
+	if (mouse.selectedPiece !== undefined) {
+		if (isValidMove()) {
+			pieces.forEach(piece => {
+				if (
+					piece.position.x / 75 === Math.floor(mouse.endPos.x / 75) &&
+					piece.position.y / 75 === Math.floor(mouse.endPos.y / 75)
+				) {
+					pieces.splice(pieces.indexOf(piece), 1)
+				}
+			})
+	
+			mouse.selectedPiece.position = ({
+				x: roundSquare(mouse.endPos.x),
+				y: roundSquare(mouse.endPos.y)
+			})
+	
+			board[Math.floor(mouse.endPos.y / squareSize)][Math.floor(mouse.endPos.x / squareSize)] = board[Math.floor(mouse.startPos.y / squareSize)][Math.floor(mouse.startPos.x / squareSize)]
+			board[Math.floor(mouse.startPos.y / squareSize)][Math.floor(mouse.startPos.x / squareSize)] = 0
 
-		mouse.selectedPiece.position = ({
-			x: roundSquare(mouse.endPos.x),
-			y: roundSquare(mouse.endPos.y)
-		})
-
+			turn++
+	
+		} else {
+			mouse.selectedPiece.position = ({
+				x: roundSquare(mouse.startPos.x),
+				y: roundSquare(mouse.startPos.y)
+			})
+		}
+	
 		mouse.selectedPiece = undefined
 	}
 })
@@ -254,4 +510,8 @@ window.addEventListener('mousemove', (event) => {
 			})
 		}
 	}
+})
+
+window.addEventListener('keypress', (event) => {
+	console.log(board)
 })
